@@ -1,0 +1,331 @@
+<?php
+$fullUrl = rawurldecode(url(request()->getRequestUri()));
+$tmpExplode = explode('?', $fullUrl);
+$fullUrlNoParams = current($tmpExplode);
+
+$filters = [
+	'salary_from',
+	'salary_to',
+	'age_from',
+	'age_to',
+	'gender',
+	'experience',
+	'sector_id',
+	'qualifications',
+	'skills',
+];
+
+$experiences = [
+	'6m' => '6 Months',
+	'1y' => '1 Year',
+	'2y' => '2 Years',
+	'3y' => '3 Years',
+	'4y' => '4 Years',
+	'5y' => '5 Years',
+];
+
+?>
+@extends('layouts.master')
+
+@section('search')
+	@parent
+	<div class="container">
+		<div class="search-row-wrapper">
+			<div class="container">
+				<form id="seach" name="search" action="/search-talent?{{httpBuildQuery(request()->all())}}" method="GET">
+
+					@foreach($filters as $filter)
+						@if(request()->query($filter))
+							<input type="hidden" name="{{$filter}}" value="{{request()->query($filter)}}">
+						@endif
+					@endforeach
+
+					<div class="row m-0">
+						<div class="col-xl-3 col-md-3 col-sm-12 col-xs-12">
+							<select name="sector_id" id="catSearch" class="form-control selecter">
+								<option value="">All Sectors </option>
+								@if (isset($cats) and $cats->count() > 0)
+									@foreach ($cats->groupBy('parent_id')->get(0) as $itemCat)
+										<option value="{{ $itemCat->tid }}" {{request()->sector_id == $itemCat->id ? 'selected' : ''}}> {{ $itemCat->name }} </option>
+									@endforeach
+								@endif
+							</select>
+						</div>
+
+						<div class="col-xl-4 col-md-4 col-sm-12 col-xs-12">
+							<input name="q" class="form-control keyword" type="text" value="{{request()->q}}" placeholder="Search by Name, Qualifications and Skills...">
+						</div>
+
+						<div class="col-xl-3 col-md-3 col-sm-12 col-xs-12 search-col locationicon">
+							<i class="icon-location-2 icon-append"></i>
+							<input type="text" id="locSearch" name="location" class="form-control locinput input-rel searchtag-input has-icon tooltipHere"
+								   placeholder="{{ t('Where?') }}" value="{{request()->location}}" title="" data-placement="bottom">
+						</div>
+
+						<div class="col-xl-2 col-md-2 col-sm-12 col-xs-12">
+							<button class="btn btn-block btn-primary">
+								<i class="fa fa-search"></i> <strong>{{ t('Find') }}</strong>
+							</button>
+						</div>
+						{!! csrf_field() !!}
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+@endsection
+
+@section('content')
+	<div class="main-container">
+
+		@include('search.inc.breadcrumbs')
+
+		@include('common.spacer')
+
+		<div class="container">
+
+			<div class="row">
+				@if (Session::has('flash_notification'))
+					<div class="col-xl-12">
+						<div class="row">
+							<div class="col-xl-12">
+								@include('flash::message')
+							</div>
+						</div>
+					</div>
+				@endif
+			</div>
+
+			<div class="row">
+
+				<!-- Sidebar -->
+				<div class="col-md-3 page-sidebar mobile-filter-sidebar pb-4">
+					<aside>
+						<div class="inner-box enable-long-words">
+
+							<a href="/search-talent" class="btn btn-success btn-sm btn-block">Reset filters</a>
+
+							<form action="/search-talent?{{httpBuildQuery(request()->all())}}" id="filter-form">
+
+								<input type="hidden" name="q" value="{{request()->q}}">
+								<input type="hidden" name="location" value="{{request()->location}}">
+								<input type="hidden" name="sector_id" value="{{request()->sector_id}}">
+
+                          <div class="collapse-box">
+                              
+								<!-- Salary -->
+								<div class="list-filter">
+									<h5 class="list-title"><strong><a href="#">Salary</a></strong><a href="#MyClassified" data-toggle="collapse" class="pull-right"><i
+                            class="fa fa-angle-down"></i></a></h5>
+                            <div class="panel-collapse collapse show" id="MyClassified">
+									<div class="filter-date filter-content">
+										<div style="display: flex; justify-content: space-between; align-items:center;">
+											<input type="number" step="1" min="10000" name="salary_from" value="{{request()->salary_from}}" class="form-control" style="margin-right: 10px;">
+											<input type="number" step="1" min="10000" name="salary_to" value="{{request()->salary_to}}" class="form-control">
+										</div>
+										<button type="submit" class="btn btn-primary btn-sm btn-block mt-2">Apply</button>
+									</div>
+								</div>
+								</div>
+</div>
+<div class="collapse-box">
+								<!-- Age -->
+								<div class="list-filter">
+									<h5 class="list-title"><strong><a href="#">Age</a></strong><a href="#MyClassified" data-toggle="collapse" class="pull-right"><i
+                            class="fa fa-angle-down"></i></a></h5>
+                            <div class="panel-collapse collapse show" id="MyClassified">
+									<div class="filter-date filter-content">
+										<div style="display: flex; justify-content: space-between; align-items:center;">
+											<input type="number" step="1" min="18" name="age_from" value="{{request()->age_from}}" class="form-control" style="margin-right: 10px;">
+											<input type="number" step="1" min="18" name="age_to" value="{{request()->age_to}}" class="form-control">
+										</div>
+										<button type="submit" class="btn btn-primary btn-sm btn-block mt-2">Apply</button>
+									</div>
+								</div>
+								</div>
+</div>
+<div class="collapse-box">
+								<!-- Gender -->
+								<div class="list-filter">
+									<h5 class="list-title"><strong><a href="#">Gender</a></strong><a href="#MyClassified" data-toggle="collapse" class="pull-right"><i
+                            class="fa fa-angle-down"></i></a></h5>
+                            <div class="panel-collapse collapse show" id="MyClassified">
+									<div class="filter-date filter-content">
+										<select name="gender" id="" class="form-control">
+											<option value="">All</option>
+											<option value="male" {{request()->male == 'male' ? 'selected' : ''}}>Male</option>
+											<option value="female" {{request()->female == 'female' ? 'selected' : ''}}>Female</option>
+										</select>
+										<button type="submit" class="btn btn-primary btn-sm btn-block mt-2">Apply</button>
+									</div>
+								</div>
+								</div>
+</div>
+<div class="collapse-box">
+								<!-- Experience -->
+								<div class="list-filter">
+									<h5 class="list-title"><strong><a href="#">Experience</a></strong><a href="#MyClassified" data-toggle="collapse" class="pull-right"><i
+                            class="fa fa-angle-down"></i></a></h5>
+                            <div class="panel-collapse collapse show" id="MyClassified">
+									<div class="filter-date filter-content">
+										<select name="experience" id="" class="form-control">
+											<option value=""></option>
+											<option value="6m" {{ request()->experience == '6m' ? 'selected' : ''}}>6 Months</option>
+											<option value="1y" {{ request()->experience == '1y' ? 'selected' : ''}}>1 Year</option>
+											<option value="2y" {{ request()->experience == '2y' ? 'selected' : ''}}>2 Year</option>
+											<option value="3y" {{ request()->experience == '3y' ? 'selected' : ''}}>3 Year</option>
+											<option value="4y" {{ request()->experience == '4y' ? 'selected' : ''}}>4 Year</option>
+											<option value="5y" {{ request()->experience == '5y' ? 'selected' : ''}}>5 Year</option>
+										</select>
+										<button type="submit" class="btn btn-primary btn-sm btn-block mt-2">Apply</button>
+									</div>
+								</div>
+								</div>
+</div>
+<div class="collapse-box">
+								<!-- Qualifications -->
+								<div class="list-filter">
+									<h5 class="list-title"><strong><a href="#">Qualifications</a></strong><a href="#MyClassified" data-toggle="collapse" class="pull-right"><i
+                            class="fa fa-angle-down"></i></a></h5>
+                            <div class="panel-collapse collapse show" id="MyClassified">
+									<div class="filter-date filter-content">
+										<input type="text" name="qualifications" value="{{request()->qualifications}}" class="form-control">
+										<button type="submit" class="btn btn-primary btn-sm btn-block mt-2">Apply</button>
+									</div>
+								</div>
+								</div>
+</div>
+<div class="collapse-box">
+								<!-- Skills -->
+								<div class="list-filter">
+									<h5 class="list-title"><strong><a href="#">Skills</a></strong><a href="#MyClassified" data-toggle="collapse" class="pull-right"><i
+                            class="fa fa-angle-down"></i></a></h5>
+                            <div class="panel-collapse collapse show" id="MyClassified">
+									<div class="filter-date filter-content">
+										<input type="text" name="skills" value="{{request()->skills}}" class="form-control">
+										<button type="submit" class="btn btn-primary btn-sm btn-block mt-2">Apply</button>
+									</div>
+								</div>
+								</div>
+</div>
+							</form>
+
+						</div>
+					</aside>
+				</div>
+
+			<!-- Content -->
+				<div class="col-md-9 page-content col-thin-left">
+					<div class="category-list">
+						<div class="tab-box clearfix">
+
+							<!-- Nav tabs -->
+							<div class="col-xl-12 box-title no-border">
+								<div class="inner">
+									<h2>
+										<small>{{ $users->total() }} Job seekers found</small>
+									</h2>
+								</div>
+							</div>
+						</div>
+
+						<div class="adds-wrapper jobs-list">
+
+							@foreach($users as $user)
+
+							<div class="item-list job-item">
+
+									<div class="row">
+										<div class="col-md-10 col-sm-10 add-desc-box">
+											<div class="add-details jobs-item">
+												<div class="row">
+													<div class="col-lg-3">
+														<a href="search-talent/seeker/{{$user->id}}">
+															<img class="user-photo mr-2" src="{{ $user->avatar_url ? asset('storage/' . $user->avatar_url) : url('images/user.jpg')  }}" alt="">
+														</a>
+													</div>
+													<div class="col-lg-5">
+															<h4 class="job-title">
+																<a href="search-talent/seeker/{{$user->id}}"><strong>{{explode(' ',$user->name)[0] ?? $user->name}}</strong></a>
+																@if($user->location) <small class="text-muted">from {{$user->location}}</small> @endif
+															</h4>
+															<p style="margin-bottom: 15px;">{{$user->sector ? $user->sector->name : '-'}}</p>
+														<div class="text-muted" style="margin-bottom: 15px;">
+															<p style="margin-bottom: 5px;"><strong>Age</strong>: {{$user->age}}</p>
+															<p style="margin-bottom: 5px;"><strong>Gender</strong>:
+																{{ucfirst($user->gender)}}</p>
+															<p style="margin-bottom: 5px;"><strong>Expected salary</strong>: LKR
+																{{number_format( $user->salary ? (int)$user->salary : 0 )}}</p>
+															<p style="margin-bottom: 5px;"><strong>Experience</strong>:
+																{{ isset($experiences[$user->experience]) ? $experiences[$user->experience] : '-'  }}</p>
+														</div>
+
+
+                                                    @if (isset(auth()->user()->user_type_id))
+                										@if (in_array(auth()->user()->user_type_id, [1]))
+                                    			
+                										@endif
+                										@if (in_array(auth()->user()->user_type_id, [2]))
+                										  		<p style="margin-bottom: 0;">Email: <a href="mailTo:{{$user->email}}">{{$user->email}}</a></p>
+                										@endif
+                									@endif
+
+												
+													</div>
+													<div class="col-lg-4">
+														<div>
+															<p style="margin-bottom: 5px;"><strong>Qualifications</strong>:</p>
+															<div style="margin-bottom: 15px;">{!! implode('<br>', explode(PHP_EOL, $user->qualifications)) !!}</div>
+														</div>
+														<div>
+															<p><strong>Skills</strong>: {{$user->skills}}</p>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+
+							</div>
+
+							@endforeach
+
+						</div>
+					</div>
+
+
+					<div class="mt-4">{{$users->links()}}</div>
+
+				</div>
+
+				<div style="clear:both;"></div>
+
+				<!-- Advertising -->
+				@include('layouts.inc.advertising.bottom')
+
+			</div>
+
+		</div>
+	</div>
+@endsection
+
+@section('modal_location')
+	@parent
+	@include('layouts.inc.modal.location')
+@endsection
+
+@section('after_scripts')
+	<script>
+		$(document).ready(function () {
+			$('#postType a').click(function (e) {
+				e.preventDefault();
+				var goToUrl = $(this).attr('href');
+				redirect(goToUrl);
+			});
+			$('#orderBy').change(function () {
+				var goToUrl = $(this).val();
+				redirect(goToUrl);
+			});
+		});
+	</script>
+@endsection
